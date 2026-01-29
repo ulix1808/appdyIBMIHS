@@ -1,9 +1,10 @@
 # Ejemplo de configuración del Agente AppDynamics para IBM HTTP Server (IHS)
-# Copiar a appdynamics_agent.conf y ajustar rutas, Controller y credenciales.
+# Agente NATIVO (C/C++), no Java. Copiar a appdynamics_agent.conf y ajustar rutas, Controller y credenciales.
 # Incluir en httpd.conf (o config principal de IHS): Include conf/appdynamics_agent.conf
 #
-# IHS 9.x -> Apache 2.4: usar libmod_appdynamics.so
-# IHS 7.x/8.x -> Apache 2.2: usar libmod_appdynamics22.so
+# Usar RUTAS ABSOLUTAS. En IHS suelen usarse $IHS_HOME/modules o $IHS_HOME/libexec.
+# IHS 9.x -> Apache 2.4: libmod_appdynamics.so
+# IHS 7.x/8.x -> Apache 2.2: libmod_appdynamics22.so
 
 # Cargar SDK (Linux/Alpine; no aplica en AIX)
 LoadFile /opt/appdynamics-sdk-native/sdk_lib/lib/libzmq.so.5
