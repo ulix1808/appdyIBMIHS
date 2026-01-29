@@ -1,0 +1,40 @@
+# Ejemplo de configuración del Agente AppDynamics para IBM HTTP Server (IHS)
+# Copiar a appdynamics_agent.conf y ajustar rutas, Controller y credenciales.
+# Incluir en httpd.conf (o config principal de IHS): Include conf/appdynamics_agent.conf
+#
+# IHS 9.x -> Apache 2.4: usar libmod_appdynamics.so
+# IHS 7.x/8.x -> Apache 2.2: usar libmod_appdynamics22.so
+
+# Cargar SDK (Linux/Alpine; no aplica en AIX)
+LoadFile /opt/appdynamics-sdk-native/sdk_lib/lib/libzmq.so.5
+LoadFile /opt/appdynamics-sdk-native/sdk_lib/lib/libappdynamics_native_sdk.so
+
+# Módulo Apache Agent - IHS 9.x (Apache 2.4)
+LoadModule appdynamics_module /opt/appdynamics-sdk-native/WebServerAgent/Apache/libmod_appdynamics.so
+# IHS 7.x/8.x (Apache 2.2): usar en su lugar:
+# LoadModule appdynamics_module /opt/appdynamics-sdk-native/WebServerAgent/Apache/libmod_appdynamics22.so
+
+AppDynamicsEnabled On
+
+# Controller
+AppDynamicsControllerHost mycontroller.saas.appdynamics.com
+AppDynamicsControllerPort 443
+AppDynamicsControllerSSL On
+
+# Credenciales (Account Name y Access Key)
+AppDynamicsAccountName MiEmpresa
+AppDynamicsAccessKey <TU_ACCESS_KEY>
+
+# Proxy HTTP opcional
+# AppDynamicsProxyHost proxy.ejemplo.com
+# AppDynamicsProxyPort 3128
+
+# Aplicación, Tier, Node (Node debe ser único por instancia)
+AppDynamicsApplication MiAppIHS
+AppDynamicsTier IHS_Tier
+AppDynamicsNode IHS_Node_01
+
+# Opcionales
+# AppDynamicsLaunchProxy Off
+# AppDynamicsProxyCommDir /opt/appdynamics-sdk-native/logs/appd-sdk
+# AppDynamicsCustomTags Env=Prod,DC=DC1
