@@ -13,8 +13,9 @@ Use esta lista para asegurar una instalación completa del agente en IBM HTTP Se
 - [ ] **HP-UX Itanium (IA-64):** si aplica, asumir que **no hay .so oficial**; documentar origen del binario y no usar .so de otra arquitectura
 - [ ] `.so` compilado para la **arquitectura exacta** (IA-64 ≠ x86_64; Exec format error / Symbol not found si no coincide)
 
-### Si HP-UX y **no** usas agente (alternativas) — ver [§2.3 del manual](MANUAL_INSTALACION_APPDYNAMICS_IHS.md#23-alternativas-para-hp-ux-sin-agente-nativo)
-- [ ] **Opción A – Métricas tipo salud:** `mod_status` en IHS, `/server-status?auto` con ACL estricta (solo IP del collector); scraping desde Linux (OTel/Telegraf/Prometheus). Cero binarios en HP-UX.
+### Si HP-UX y **no** usas agente (alternativas) — ver [§2.3 y §2.3.1 del manual](MANUAL_INSTALACION_APPDYNAMICS_IHS.md#23-alternativas-para-hp-ux-sin-agente-nativo)
+- [ ] **Host Linux:** mínimo **1 CPU y 4 GB RAM** para Machine Agent + Python (manual mod_status + Machine Agent + Python).
+- [ ] **Opción A – Métricas tipo salud:** `mod_status` en IHS, `/server-status?auto` con ACL estricta (solo IP del collector). Scraping desde Linux (Machine Agent + extensión IHSStatus en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/), o OTel/Telegraf/Prometheus). Cero binarios en HP-UX.
 - [ ] **Opción B – Logs:** `access_log` (con `%D` si se quiere latencia) y `error_log`. Recolectar de forma **remota** (syslog, rsync, NFS, etc.) y parsear en Linux; **no** instalar forwarders en HP-UX.
 
 ## Fase 1: Antes de comenzar

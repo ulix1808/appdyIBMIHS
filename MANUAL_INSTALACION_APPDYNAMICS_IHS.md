@@ -10,7 +10,7 @@ Este manual describe los pasos para instalar y configurar el **Apache Agent** de
 
 0. [Conceptos clave: Apache Agent vs Java Agent](#0-conceptos-clave-apache-agent-vs-java-agent)
 1. [Antes de comenzar](#1-antes-de-comenzar)
-2. [Plataformas soportadas y HP-UX / Itanium](#2-plataformas-soportadas-y-hp-ux--itanium) — incl. [§2.3 Alternativas para HP-UX sin agente](#23-alternativas-para-hp-ux-sin-agente-nativo) (mod_status, logs)
+2. [Plataformas soportadas y HP-UX / Itanium](#2-plataformas-soportadas-y-hp-ux--itanium) — incl. [§2.3 Alternativas HP-UX](#23-alternativas-para-hp-ux-sin-agente-nativo) y [§2.3.1 Manual mod_status + Machine Agent + Python](#231-manual-de-implementación-paso-a-paso-mod_status--machine-agent--python)
 3. [Descargar e instalar el agente](#3-descargar-e-instalar-el-agente)
 4. [Configurar el agente Apache](#4-configurar-el-agente-apache)
 5. [Iniciar el proxy](#5-iniciar-el-proxy)
@@ -157,6 +157,8 @@ Si en tu entorno hay **IHS sobre HP-UX Itanium** (p. ej. Apache 2.4.12 IBM custo
 
 Como el Apache Agent **no corre de forma nativa** en HP-UX, se pueden usar estas opciones para obtener visibilidad sobre IHS sin binarios propietarios en el host HP-UX.
 
+**Requisitos para el manual de implementación (mod_status + Machine Agent + Python):** se necesita un **host Linux** con **mínimo 1 CPU y 4 GB RAM** para desplegar el **Machine Agent** de AppDynamics y el **script Python** que hace scraping de `server-status` y envía métricas al Controller. En HP-UX solo se modifica la configuración de IHS (mod_status); no se instalan binarios ni forwarders.
+
 ---
 
 #### Opción A: Métricas “tipo salud” del IHS (sin agente)
@@ -207,6 +209,129 @@ Los logs son la fuente de verdad para IHS legacy:
   - **Infraestructura existente:** si ya hay recolección de logs (SIEM, centralizada), consumir desde ahí y extraer métricas o eventos.
 
 Con el parsing de `access_log` se pueden derivar series de tiempo (requests/s, latencias, códigos 4xx/5xx, etc.). Con `error_log`, alertas y eventos de fallos. Todo sin correr agentes ni forwarders adicionales en HP-UX.
+
+---
+
+#### 2.3.1 Manual de implementación paso a paso (mod_status + Machine Agent + Python)
+
+Este manual detalla cómo obtener métricas “tipo salud” de IHS en HP-UX usando **mod_status**, un **Machine Agent** en un host Linux y un **script Python** que hace scraping y publica métricas al HTTP Listener del Machine Agent. Los archivos de la extensión (config, script, README) están en el repo en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/).
+
+**Requisitos:** host Linux con **mínimo 1 CPU y 4 GB RAM**, Machine Agent de AppDynamics, Python 3 y `requests`. En HP-UX solo cambios de config en IHS.
+
+---
+
+##### A) Config en IBM HTTP Server (IHS) – HP-UX
+
+1. Habilitar **mod_status** (asegurarse de que el módulo esté cargado).
+2. Añadir un **`Location`** para `server-status` con **ACL restringida solo al host Linux** donde corre el Machine Agent.
+
+Ejemplo (ajusta paths y ACL a tu estándar; en IHS el módulo puede ser `mod_status.so` o `mod_status.sl` según versión):
+
+```apache
+# 1) Asegurar que mod_status esté activo
+LoadModule status_module modules/mod_status.so
+
+# 2) Endpoint de status
+ExtendedStatus On
+
+<Location "/server-status">
+    SetHandler server-status
+
+    # Solo permitir al collector Linux
+    Require ip 10.10.10.50
+</Location>
+```
+
+En IHS 7.x/8.x (Apache 2.2) usar `Order`, `Allow from`, `Deny from` en lugar de `Require ip`. La ACL debe restringir el acceso **únicamente** al host que hace el scraping.
+
+**Validación:**
+
+```bash
+apachectl -M | grep status
+curl "http://localhost:<PUERTO>/server-status?auto"
+```
+
+Sustituir `<PUERTO>` por el puerto de IHS. Comprobar que la salida incluye líneas como `BusyWorkers`, `IdleWorkers`, `ReqPerSec`, etc.
+
+---
+
+##### B) Machine Agent (Linux) – habilitar HTTP Listener
+
+El Machine Agent debe exponer el **HTTP Listener** para recibir métricas que el script Python envía por POST.
+
+- Directorio de despliegue típico: `/opt/appdynamics/machine-agent/`
+- Añadir al arranque del Machine Agent (JVM / script de inicio) las propiedades:
+
+```
+-Dmetric.http.listener=true
+-Dmetric.http.listener.port=8293
+-Dmetric.http.listener.host=127.0.0.1
+```
+
+El listener quedará escuchando en `127.0.0.1:8293` (solo local). Reiniciar el Machine Agent y validar:
+
+```bash
+ss -lntp | grep 8293
+curl -i http://127.0.0.1:8293/
+```
+
+---
+
+##### C) Extensión “script-based” para ejecutar Python cada minuto (Machine Agent)
+
+Estructura bajo el Machine Agent:
+
+```
+/opt/appdynamics/machine-agent/monitors/IHSStatus/
+  ├── config.yml
+  ├── ihs_status_to_appd.py
+  └── README.md
+```
+
+Los archivos listos para copiar están en el repo en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/).
+
+**`config.yml`** (ejemplo; ajusta `IHS_STATUS_URL` a la IP/puerto de tu IHS en HP-UX):
+
+```yaml
+extensionName: "IHSStatus"
+version: "1.0.0"
+language: "python"
+
+executionFrequencyInSeconds: 60
+timeoutInSeconds: 20
+
+command: ["python3", "ihs_status_to_appd.py"]
+
+env:
+  IHS_STATUS_URL: "http://10.10.10.20:80/server-status?auto"
+  APPD_HTTP_LISTENER: "http://127.0.0.1:8293/api/v1/metrics"
+  METRIC_PREFIX: "Custom Metrics|Web|IHS|HPUX"
+```
+
+El script **`ihs_status_to_appd.py`** hace `GET` a `IHS_STATUS_URL`, parsea `server-status?auto`, construye el payload de métricas y hace `POST` a `APPD_HTTP_LISTENER`. Las métricas se publican con el prefijo `METRIC_PREFIX`.
+
+**Dependencias en el host Linux:**
+
+```bash
+python3 -m pip install requests
+```
+
+El contrato exacto de `config.yml` puede variar según la versión del Machine Agent y el framework de extensiones (script-based). Si usas otro estilo de extensión, adapta `command` y `env` según la documentación de tu instalación.
+
+---
+
+##### D) Dónde ver las métricas en AppDynamics (clásico)
+
+En el Controller de AppDynamics:
+
+- **Metric Browser** → buscar por ejemplo:
+  - `Custom Metrics|Web|IHS|HPUX|BusyWorkers`
+  - `Custom Metrics|Web|IHS|HPUX|IdleWorkers`
+  - `Custom Metrics|Web|IHS|HPUX|ReqPerSec`
+  - `Custom Metrics|Web|IHS|HPUX|BytesPerSec`
+  - `Custom Metrics|Web|IHS|HPUX|TotalAccesses`
+  - `Custom Metrics|Web|IHS|HPUX|UptimeSec`
+  - etc.
 
 ---
 

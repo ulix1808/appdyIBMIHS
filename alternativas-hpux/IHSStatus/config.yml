@@ -1,0 +1,20 @@
+# /opt/appdynamics/machine-agent/monitors/IHSStatus/config.yml
+# Copiar a monitors/IHSStatus/ bajo el directorio del Machine Agent.
+# Ajustar IHS_STATUS_URL (IP/puerto del IHS en HP-UX) y METRIC_PREFIX según entorno.
+
+extensionName: "IHSStatus"
+version: "1.0.0"
+language: "python"
+
+# Ejecutar cada 60 segundos
+executionFrequencyInSeconds: 60
+timeoutInSeconds: 20
+
+# Comando a ejecutar
+command: ["python3", "ihs_status_to_appd.py"]
+
+# Variables para el script
+env:
+  IHS_STATUS_URL: "http://10.10.10.20:80/server-status?auto"
+  APPD_HTTP_LISTENER: "http://127.0.0.1:8293/api/v1/metrics"
+  METRIC_PREFIX: "Custom Metrics|Web|IHS|HPUX"

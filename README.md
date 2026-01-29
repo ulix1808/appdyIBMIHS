@@ -8,6 +8,7 @@ Este directorio contiene documentación y ejemplos para instalar el **Apache Age
 |---------|-------------|
 | [MANUAL_INSTALACION_APPDYNAMICS_IHS.md](./MANUAL_INSTALACION_APPDYNAMICS_IHS.md) | Manual completo de instalación y configuración (español) |
 | [docs/REFERENCIA_APPDYNAMICS_APACHE_AGENT.md](./docs/REFERENCIA_APPDYNAMICS_APACHE_AGENT.md) | Referencia local: plataformas, libstdc++, AIX, SELinux, proxy, descargas (sin enlaces externos) |
+| [alternativas-hpux/](./alternativas-hpux/) | Alternativas para IHS en HP-UX (mod_status + Machine Agent + Python). Host Linux: 1 CPU, 4 GB RAM mín. |
 | [appdynamics_agent.conf.ejemplo](./appdynamics_agent.conf.ejemplo) | Ejemplo de configuración del agente para copiar y adaptar |
 | [CHECKLIST_INSTALACION_IHS.md](./CHECKLIST_INSTALACION_IHS.md) | Lista de comprobación para la instalación |
 

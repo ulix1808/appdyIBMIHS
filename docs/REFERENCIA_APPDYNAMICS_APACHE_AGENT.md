@@ -32,7 +32,7 @@ Este documento consolida la información de soporte, requisitos y troubleshootin
 
 ### No soportados oficialmente
 
-- **HP-UX** (incl. Itanium / IA-64): no hay binarios oficiales. No usar `.so` de otras arquitecturas. Para IHS en HP-UX existen **alternativas sin agente**: métricas “tipo salud” vía **`mod_status`** + scraping desde un host Linux (OTel/Telegraf/Prometheus), y uso de **`access_log`** / **`error_log`** con recolección remota (syslog, rsync, NFS, etc.) y parsing en el collector — sin instalar forwarders en HP-UX. Detalle en [§2.3 Alternativas para HP-UX](../MANUAL_INSTALACION_APPDYNAMICS_IHS.md#23-alternativas-para-hp-ux-sin-agente-nativo) del manual.
+- **HP-UX** (incl. Itanium / IA-64): no hay binarios oficiales. No usar `.so` de otras arquitecturas. Para IHS en HP-UX existen **alternativas sin agente**: métricas “tipo salud” vía **`mod_status`** + scraping desde un host Linux (Machine Agent + Python en [alternativas-hpux/IHSStatus/](../alternativas-hpux/IHSStatus/), o OTel/Telegraf/Prometheus), y uso de **`access_log`** / **`error_log`** con recolección remota (syslog, rsync, NFS, etc.) — sin forwarders en HP-UX. Host Linux: **mín. 1 CPU y 4 GB RAM**. Manual paso a paso: [§2.3 y §2.3.1](../MANUAL_INSTALACION_APPDYNAMICS_IHS.md#231-manual-de-implementación-paso-a-paso-mod_status--machine-agent--python) del manual.
 - **Solaris** / **Windows**: no aparecen en la matriz actual del Apache Agent. Confirmar con documentación vigente o soporte si se usan.
 
 ### Módulos Apache
