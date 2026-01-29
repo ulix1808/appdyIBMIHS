@@ -157,7 +157,7 @@ Si en tu entorno hay **IHS sobre HP-UX Itanium** (p. ej. Apache 2.4.12 IBM custo
 
 Como el Apache Agent **no corre de forma nativa** en HP-UX, se pueden usar estas opciones para obtener visibilidad sobre IHS sin binarios propietarios en el host HP-UX.
 
-**Requisitos para el manual de implementación (mod_status + Machine Agent + Python):** se necesita un **host Linux** con **mínimo 1 CPU y 4 GB RAM** para desplegar el **Machine Agent** de AppDynamics y el **script Python** que hace scraping de `server-status` y envía métricas al Controller. En HP-UX solo se modifica la configuración de IHS (mod_status); no se instalan binarios ni forwarders.
+**Requisitos para el manual de implementación (mod_status + Machine Agent + Python):** se necesita un **host Linux** con **mínimo 1 CPU y 4 GB RAM** para desplegar el **Machine Agent** de AppDynamics y el **script Python** que hace scraping de `server-status` y envía métricas al Controller. En el host Linux debe estar **Python instalado** (Python 3 y `requests`). Además, **Linux debe poder alcanzar al IHS** (o el IHS ser alcanzable desde Linux) para recolectar las métricas: el script hace `GET` a `http://<IHS>:<puerto>/server-status?auto`, por lo que tiene que existir **conectividad de red** entre ambos (acceso HTTP al puerto de IHS). Sin ello no se pueden colectar métricas. En HP-UX solo se modifica la configuración de IHS (mod_status); no se instalan binarios ni forwarders.
 
 ---
 
@@ -180,8 +180,9 @@ Habilitar **`mod_status`** en IHS y recolectar métricas **desde fuera** (scrapi
 
    Ajustar `Require ip` a la IP del host que hace scraping. En IHS 7.x/8.x (Apache 2.2) usar `Order`, `Allow from`, `Deny from` en su lugar. Evitar exponer `server-status` a redes públicas.
 
-**En un host Linux** (donde sí corre OTel Collector, Telegraf, Prometheus, etc.):
+**En un host Linux** (donde sí corre OTel Collector, Telegraf, Prometheus, o el Machine Agent + Python):
 
+- El host Linux debe **alcanzar al IHS** (conectividad de red, HTTP al puerto de IHS) para poder recolectar; sin ello no hay métricas.
 - Hacer **scraping** de `http://<ihs-host>:<puerto>/server-status?auto`.
 - Convertir la salida a métricas: requests, busy/idle workers, scoreboard, bytes servidos, etc.
 
@@ -216,7 +217,7 @@ Con el parsing de `access_log` se pueden derivar series de tiempo (requests/s, l
 
 Este manual detalla cómo obtener métricas “tipo salud” de IHS en HP-UX usando **mod_status**, un **Machine Agent** en un host Linux y un **script Python** que hace scraping y publica métricas al HTTP Listener del Machine Agent. Los archivos de la extensión (config, script, README) están en el repo en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/).
 
-**Requisitos:** host Linux con **mínimo 1 CPU y 4 GB RAM**, Machine Agent de AppDynamics, Python 3 y `requests`. En HP-UX solo cambios de config en IHS.
+**Requisitos:** host Linux con **mínimo 1 CPU y 4 GB RAM**; **Python instalado** (Python 3 y `requests`); Machine Agent de AppDynamics. **Conectividad de red:** el host Linux debe poder **alcanzar al IHS** en HP-UX (o viceversa) para recolectar las métricas — el script hace scraping por HTTP al puerto de IHS; sin conectividad no hay colección. En HP-UX solo cambios de config en IHS.
 
 ---
 
@@ -246,10 +247,14 @@ En IHS 7.x/8.x (Apache 2.2) usar `Order`, `Allow from`, `Deny from` en lugar de 
 
 **Validación:**
 
-```bash
-apachectl -M | grep status
-curl "http://localhost:<PUERTO>/server-status?auto"
-```
+- En el **servidor IHS (HP-UX):**
+  ```bash
+  apachectl -M | grep status
+  curl "http://localhost:<PUERTO>/server-status?auto"
+  ```
+- En el **host Linux** (donde corre el Machine Agent / script): comprobar **conectividad** al IHS con  
+  `curl "http://<IHS-IP>:<PUERTO>/server-status?auto"`  
+  Sustituir `<IHS-IP>` y `<PUERTO>`. Si no hay respuesta, Linux no alcanza al IHS y no se podrán recolectar métricas.
 
 Sustituir `<PUERTO>` por el puerto de IHS. Comprobar que la salida incluye líneas como `BusyWorkers`, `IdleWorkers`, `ReqPerSec`, etc.
 
@@ -310,7 +315,7 @@ env:
 
 El script **`ihs_status_to_appd.py`** hace `GET` a `IHS_STATUS_URL`, parsea `server-status?auto`, construye el payload de métricas y hace `POST` a `APPD_HTTP_LISTENER`. Las métricas se publican con el prefijo `METRIC_PREFIX`.
 
-**Dependencias en el host Linux:**
+**Dependencias en el host Linux:** **Python** debe estar **instalado** (Python 3). Además, el paquete `requests`:
 
 ```bash
 python3 -m pip install requests

@@ -5,8 +5,9 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
 ## Requisitos
 
 - **Host Linux** con **mínimo 1 CPU y 4 GB RAM**
+- **Python instalado** en el host Linux (Python 3). Dependencia: `python3 -m pip install requests`
 - Machine Agent de AppDynamics con **HTTP Listener** habilitado (puerto 8293, 127.0.0.1)
-- Python 3 y `requests`: `python3 -m pip install requests`
+- **Conectividad de red:** el host Linux debe poder **alcanzar al IHS** en HP-UX (o viceversa) para hacer el scraping de `server-status?auto`; sin conectividad no se recolectan métricas.
 - IHS en HP-UX con **mod_status** habilitado y `/server-status?auto` accesible solo desde la IP del host Linux
 
 ## Instalación

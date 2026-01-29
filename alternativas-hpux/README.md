@@ -5,6 +5,8 @@ En HP-UX el **Apache Agent** de AppDynamics no está soportado. Esta carpeta con
 ## Requisitos
 
 - **Host Linux** con **mínimo 1 CPU y 4 GB RAM** (Machine Agent + Python).
+- **Python instalado** en el host Linux (Python 3 y `requests`).
+- **Conectividad de red:** el host Linux debe poder **alcanzar al IHS** en HP-UX (o viceversa) para recolectar las métricas vía scraping; sin conectividad no hay colección.
 - IHS en HP-UX: solo cambios de configuración (mod_status); sin binarios ni forwarders.
 
 ## Contenido

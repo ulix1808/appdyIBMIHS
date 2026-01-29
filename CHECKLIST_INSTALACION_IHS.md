@@ -15,6 +15,8 @@ Use esta lista para asegurar una instalación completa del agente en IBM HTTP Se
 
 ### Si HP-UX y **no** usas agente (alternativas) — ver [§2.3 y §2.3.1 del manual](MANUAL_INSTALACION_APPDYNAMICS_IHS.md#23-alternativas-para-hp-ux-sin-agente-nativo)
 - [ ] **Host Linux:** mínimo **1 CPU y 4 GB RAM** para Machine Agent + Python (manual mod_status + Machine Agent + Python).
+- [ ] **Python instalado** en el host Linux (Python 3, `requests`).
+- [ ] **Conectividad:** Linux debe **alcanzar al IHS** (o viceversa) para recolectar métricas; sin ello no hay scraping.
 - [ ] **Opción A – Métricas tipo salud:** `mod_status` en IHS, `/server-status?auto` con ACL estricta (solo IP del collector). Scraping desde Linux (Machine Agent + extensión IHSStatus en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/), o OTel/Telegraf/Prometheus). Cero binarios en HP-UX.
 - [ ] **Opción B – Logs:** `access_log` (con `%D` si se quiere latencia) y `error_log`. Recolectar de forma **remota** (syslog, rsync, NFS, etc.) y parsear en Linux; **no** instalar forwarders en HP-UX.
 
