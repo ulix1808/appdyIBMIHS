@@ -5,6 +5,7 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
 ## Requisitos
 
 - **Host Linux** con **mínimo 1 CPU y 4 GB RAM**
+- **Java 11 o superior** (Machine Agent 25.x requiere Java 11+; Java 8 no es compatible)
 - **Python instalado** en el host Linux (Python 3). Dependencia: `python3 -m pip install requests`
 - Machine Agent de AppDynamics con **HTTP Listener** habilitado (puerto 8293, 127.0.0.1)
 - **Conectividad de red:** el host Linux debe poder **alcanzar al IHS** en HP-UX (o viceversa) para hacer el scraping de `server-status?auto`; sin conectividad no se recolectan métricas.
@@ -12,12 +13,12 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
 
 ## Instalación
 
-1. Copiar `monitor.xml`, `ihs_status_to_appd.py`, `env.example` y este `README.md` a:
+1. Copiar `monitor.xml`, `run_ihs_status.sh`, `ihs_status_to_appd.py`, `env.example` y este `README.md` a:
    ```
    /opt/appdynamics/machine-agent/monitors/IHSStatus/
    ```
    (Ajustar la ruta si el Machine Agent está en otro directorio.)
-2. Editar `monitor.xml`: actualizar la ruta en `<argument>` al script Python según tu instalación (ej. `/opt/appdynamics/machine-agent/monitors/IHSStatus/ihs_status_to_appd.py`). Si `python3` no está en `/usr/bin/python3`, cambiar también `<executable>`.
+2. Hacer ejecutable el wrapper: `chmod +x run_ihs_status.sh`. Si `python3` no está en `/usr/bin/python3`, editar la primera línea ejecutable en `run_ihs_status.sh` con la ruta correcta.
 3. Definir las variables de entorno para el script (el Machine Agent las hereda al ejecutar la extensión):
    - Copiar `env.example` a `env.sh`, editar valores y hacer `source env.sh` antes de arrancar el Machine Agent, **o** exportarlas en el script/systemd que inicia el Machine Agent.
    - `IHS_STATUS_URL`: URL completa de `server-status?auto` del IHS (IP/puerto del HP-UX).

@@ -217,7 +217,7 @@ Con el parsing de `access_log` se pueden derivar series de tiempo (requests/s, l
 
 Este manual detalla cómo obtener métricas “tipo salud” de IHS en HP-UX usando **mod_status**, un **Machine Agent** en un host Linux y un **script Python** que hace scraping y publica métricas al HTTP Listener del Machine Agent. Los archivos de la extensión (config, script, README) están en el repo en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/).
 
-**Requisitos:** host Linux con **mínimo 1 CPU y 4 GB RAM**; **Python instalado** (Python 3 y `requests`); Machine Agent de AppDynamics. **Conectividad de red:** el host Linux debe poder **alcanzar al IHS** en HP-UX (o viceversa) para recolectar las métricas — el script hace scraping por HTTP al puerto de IHS; sin conectividad no hay colección. En HP-UX solo cambios de config en IHS.
+**Requisitos:** host Linux con **mínimo 1 CPU y 4 GB RAM**; **Java 11 o superior** (Machine Agent 25.x no corre con Java 8); **Python instalado** (Python 3 y `requests`); Machine Agent de AppDynamics. **Conectividad de red:** el host Linux debe poder **alcanzar al IHS** en HP-UX (o viceversa) para recolectar las métricas — el script hace scraping por HTTP al puerto de IHS; sin conectividad no hay colección. En HP-UX solo cambios de config en IHS.
 
 ---
 
@@ -291,6 +291,7 @@ Estructura bajo el Machine Agent:
 ```
 /opt/appdynamics/machine-agent/monitors/IHSStatus/
   ├── monitor.xml
+  ├── run_ihs_status.sh     ← wrapper ejecutable (evita bugs de type=command)
   ├── ihs_status_to_appd.py
   ├── env.example
   └── README.md
@@ -298,7 +299,7 @@ Estructura bajo el Machine Agent:
 
 Los archivos listos para copiar están en el repo en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/).
 
-**`monitor.xml`** (ejemplo; ajustar la ruta en `<argument>` al directorio real del Machine Agent):
+**`monitor.xml`** usa `type=file` con el wrapper `run_ihs_status.sh` (el formato `type=command` con `<executable>` y `<argument>` puede producir errores de parsing en algunas versiones del Machine Agent):
 
 ```xml
 <monitor>
@@ -309,18 +310,19 @@ Los archivos listos para copiar están en el repo en [alternativas-hpux/IHSStatu
   <monitor-run-task>
     <execution-style>periodic</execution-style>
     <execution-frequency-in-seconds>60</execution-frequency-in-seconds>
+    <name>Run</name>
     <type>executable</type>
 
     <executable-task>
-      <type>command</type>
-      <command>
-        <executable>/usr/bin/python3</executable>
-        <argument>/opt/appdynamics/machine-agent/monitors/IHSStatus/ihs_status_to_appd.py</argument>
-      </command>
+      <type>file</type>
+      <file os-type="linux">run_ihs_status.sh</file>
+      <file os-type="mac">run_ihs_status.sh</file>
     </executable-task>
   </monitor-run-task>
 </monitor>
 ```
+
+Tras copiar, ejecutar: `chmod +x run_ihs_status.sh`. Si `python3` no está en `/usr/bin/python3`, editar la ruta en `run_ihs_status.sh`.
 
 **Variables de entorno:** el script lee `IHS_STATUS_URL`, `APPD_HTTP_LISTENER` y `METRIC_PREFIX` de las variables de entorno. Deben estar definidas donde corre el Machine Agent (p. ej. en el script de arranque, en `env.example` copiado y cargado con `source`, o en el entorno del servicio). Ver `env.example` en el repo.
 

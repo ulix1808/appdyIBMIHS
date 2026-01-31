@@ -13,7 +13,7 @@ En HP-UX el **Apache Agent** de AppDynamics no está soportado. Esta carpeta con
 
 | Ruta | Descripción |
 |------|-------------|
-| [IHSStatus/](IHSStatus/) | Extensión Machine Agent: `monitor.xml`, `ihs_status_to_appd.py`, `env.example`, README |
+| [IHSStatus/](IHSStatus/) | Extensión Machine Agent: `monitor.xml`, `run_ihs_status.sh`, `ihs_status_to_appd.py`, `env.example`, README |
 
 ## Manual de implementación
 
