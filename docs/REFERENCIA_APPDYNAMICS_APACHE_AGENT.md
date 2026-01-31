@@ -77,6 +77,7 @@ En caso de conflictos de símbolos o cargas incorrectas, revisar dependencias co
 
 - Si se usa la **Apache Monitoring Extension** con el **Machine Agent**, se puede seguir utilizando.
 - Tras instalar el **Apache Agent** (módulo nativo en Apache/IHS), puede ser necesario **reiniciar el Machine Agent** para que convivan correctamente.
+- **Extensiones ejecutables (script/Python):** el Machine Agent usa **`monitor.xml`** (no `config.yml`) para definir extensiones. Formato: `<monitor>`, `<monitor-run-task>`, `type=executable`, `<executable-task>` con `<command>`, `<executable>` y `<argument>`. Ver ejemplo en [alternativas-hpux/IHSStatus/monitor.xml](../alternativas-hpux/IHSStatus/monitor.xml).
 
 ---
 

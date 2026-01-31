@@ -12,21 +12,24 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
 
 ## Instalación
 
-1. Copiar `config.yml`, `ihs_status_to_appd.py` y este `README.md` a:
+1. Copiar `monitor.xml`, `ihs_status_to_appd.py`, `env.example` y este `README.md` a:
    ```
    /opt/appdynamics/machine-agent/monitors/IHSStatus/
    ```
-2. Editar `config.yml`:
+   (Ajustar la ruta si el Machine Agent está en otro directorio.)
+2. Editar `monitor.xml`: actualizar la ruta en `<argument>` al script Python según tu instalación (ej. `/opt/appdynamics/machine-agent/monitors/IHSStatus/ihs_status_to_appd.py`). Si `python3` no está en `/usr/bin/python3`, cambiar también `<executable>`.
+3. Definir las variables de entorno para el script (el Machine Agent las hereda al ejecutar la extensión):
+   - Copiar `env.example` a `env.sh`, editar valores y hacer `source env.sh` antes de arrancar el Machine Agent, **o** exportarlas en el script/systemd que inicia el Machine Agent.
    - `IHS_STATUS_URL`: URL completa de `server-status?auto` del IHS (IP/puerto del HP-UX).
    - `APPD_HTTP_LISTENER`: normalmente `http://127.0.0.1:8293/api/v1/metrics`.
    - `METRIC_PREFIX`: prefijo de métricas en el Controller (ej. `Custom Metrics|Web|IHS|HPUX`).
-3. Asegurar que el Machine Agent arranca con:
+4. Asegurar que el Machine Agent arranca con:
    ```
    -Dmetric.http.listener=true
    -Dmetric.http.listener.port=8293
    -Dmetric.http.listener.host=127.0.0.1
    ```
-4. Reiniciar el Machine Agent.
+5. Reiniciar el Machine Agent.
 
 ## Métricas publicadas
 

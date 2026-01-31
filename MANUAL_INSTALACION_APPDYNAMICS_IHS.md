@@ -284,34 +284,45 @@ curl -i http://127.0.0.1:8293/
 
 ##### C) Extensión “script-based” para ejecutar Python cada minuto (Machine Agent)
 
+El Machine Agent usa **`monitor.xml`** (no `config.yml`) para definir extensiones ejecutables, según el formato estándar de AppDynamics para monitoring extensions (script/Java).
+
 Estructura bajo el Machine Agent:
 
 ```
 /opt/appdynamics/machine-agent/monitors/IHSStatus/
-  ├── config.yml
+  ├── monitor.xml
   ├── ihs_status_to_appd.py
+  ├── env.example
   └── README.md
 ```
 
 Los archivos listos para copiar están en el repo en [alternativas-hpux/IHSStatus/](alternativas-hpux/IHSStatus/).
 
-**`config.yml`** (ejemplo; ajusta `IHS_STATUS_URL` a la IP/puerto de tu IHS en HP-UX):
+**`monitor.xml`** (ejemplo; ajustar la ruta en `<argument>` al directorio real del Machine Agent):
 
-```yaml
-extensionName: "IHSStatus"
-version: "1.0.0"
-language: "python"
+```xml
+<monitor>
+  <name>IHSStatus</name>
+  <type>managed</type>
+  <description>IHS server-status monitor (mod_status) para HP-UX</description>
 
-executionFrequencyInSeconds: 60
-timeoutInSeconds: 20
+  <monitor-run-task>
+    <execution-style>periodic</execution-style>
+    <execution-frequency-in-seconds>60</execution-frequency-in-seconds>
+    <type>executable</type>
 
-command: ["python3", "ihs_status_to_appd.py"]
-
-env:
-  IHS_STATUS_URL: "http://10.10.10.20:80/server-status?auto"
-  APPD_HTTP_LISTENER: "http://127.0.0.1:8293/api/v1/metrics"
-  METRIC_PREFIX: "Custom Metrics|Web|IHS|HPUX"
+    <executable-task>
+      <type>command</type>
+      <command>
+        <executable>/usr/bin/python3</executable>
+        <argument>/opt/appdynamics/machine-agent/monitors/IHSStatus/ihs_status_to_appd.py</argument>
+      </command>
+    </executable-task>
+  </monitor-run-task>
+</monitor>
 ```
+
+**Variables de entorno:** el script lee `IHS_STATUS_URL`, `APPD_HTTP_LISTENER` y `METRIC_PREFIX` de las variables de entorno. Deben estar definidas donde corre el Machine Agent (p. ej. en el script de arranque, en `env.example` copiado y cargado con `source`, o en el entorno del servicio). Ver `env.example` en el repo.
 
 El script **`ihs_status_to_appd.py`** hace `GET` a `IHS_STATUS_URL`, parsea `server-status?auto`, construye el payload de métricas y hace `POST` a `APPD_HTTP_LISTENER`. Las métricas se publican con el prefijo `METRIC_PREFIX`.
 
@@ -320,8 +331,6 @@ El script **`ihs_status_to_appd.py`** hace `GET` a `IHS_STATUS_URL`, parsea `ser
 ```bash
 python3 -m pip install requests
 ```
-
-El contrato exacto de `config.yml` puede variar según la versión del Machine Agent y el framework de extensiones (script-based). Si usas otro estilo de extensión, adapta `command` y `env` según la documentación de tu instalación.
 
 ---
 

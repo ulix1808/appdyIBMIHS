@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Monitor para IHS server-status (Python).
+  Formato según AppDynamics: Build a Monitoring Extension Using Scripts.
+  Ajustar la ruta en <argument> al directorio real del Machine Agent.
+  Variables de entorno (IHS_STATUS_URL, APPD_HTTP_LISTENER, METRIC_PREFIX)
+  deben estar definidas donde corre el Machine Agent (startup, wrapper, etc.).
+-->
+<monitor>
+  <name>IHSStatus</name>
+  <type>managed</type>
+  <description>IHS server-status monitor (mod_status) para HP-UX – scraping y envío al HTTP Listener</description>
+
+  <monitor-run-task>
+    <execution-style>periodic</execution-style>
+    <execution-frequency-in-seconds>60</execution-frequency-in-seconds>
+    <type>executable</type>
+
+    <executable-task>
+      <type>command</type>
+      <command>
+        <executable>/usr/bin/python3</executable>
+        <argument>/opt/appdynamics/machine-agent/monitors/IHSStatus/ihs_status_to_appd.py</argument>
+      </command>
+    </executable-task>
+  </monitor-run-task>
+</monitor>
