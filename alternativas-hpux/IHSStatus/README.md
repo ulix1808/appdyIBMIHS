@@ -21,9 +21,11 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
 2. Hacer ejecutable el wrapper: `chmod +x run_ihs_status.sh`. Si `python3` no está en `/usr/bin/python3`, editar la primera línea ejecutable en `run_ihs_status.sh` con la ruta correcta.
 3. Definir las variables de entorno para el script (el Machine Agent las hereda al ejecutar la extensión):
    - Copiar `env.example` a `env.sh`, editar valores y hacer `source env.sh` antes de arrancar el Machine Agent, **o** exportarlas en el script/systemd que inicia el Machine Agent.
-   - `IHS_STATUS_URL`: URL completa de `server-status?auto` del IHS (IP/puerto del HP-UX).
+   - **Múltiples IHS:** `IHS_TARGETS` = lista separada por coma. Cada target: `"url|label"`.
+     Ejemplo: `IHS_TARGETS="http://ihs1:80/server-status?auto|IHS-PROD-1,http://ihs2:80/server-status?auto|IHS-PROD-2"`
+   - **Un solo IHS:** `IHS_STATUS_URL` + opcional `IHS_LABEL` (default `"default"`).
    - `APPD_HTTP_LISTENER`: normalmente `http://127.0.0.1:8293/api/v1/metrics`.
-   - `METRIC_PREFIX`: prefijo de métricas en el Controller (ej. `Custom Metrics|Web|IHS|HPUX`).
+   - `METRIC_PREFIX`: prefijo base (ej. `Custom Metrics|Web|IHS|HPUX`).
 4. Asegurar que el Machine Agent arranca con:
    ```
    -Dmetric.http.listener=true
@@ -38,7 +40,9 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
 - `ReqPerSec`, `BytesPerSec`, `BytesPerReq`
 - `TotalAccesses`, `UptimeSec`
 
-En AppDynamics: **Metric Browser** → `Custom Metrics|Web|IHS|HPUX|...` (o el prefijo configurado).
+En AppDynamics: **Metric Browser** → `Custom Metrics|Web|IHS|HPUX|{label}|...` (el `{label}` identifica cada IHS cuando se monitorean varios).
+
+**Nota:** El HTTP Listener exige valores enteros (64-bit). Las métricas decimales (`ReqPerSec`, `BytesPerSec`, `BytesPerReq`) se envían escaladas x1000. Para visualizarlas correctamente en un dashboard, usa fórmula `valor/1000` si necesitas la escala original.
 
 ## Manual completo
 

@@ -324,9 +324,14 @@ Los archivos listos para copiar están en el repo en [alternativas-hpux/IHSStatu
 
 Tras copiar, ejecutar: `chmod +x run_ihs_status.sh`. Si `python3` no está en `/usr/bin/python3`, editar la ruta en `run_ihs_status.sh`.
 
-**Variables de entorno:** el script lee `IHS_STATUS_URL`, `APPD_HTTP_LISTENER` y `METRIC_PREFIX` de las variables de entorno. Deben estar definidas donde corre el Machine Agent (p. ej. en el script de arranque, en `env.example` copiado y cargado con `source`, o en el entorno del servicio). Ver `env.example` en el repo.
+**Variables de entorno:** el script lee de las variables de entorno. Deben estar definidas donde corre el Machine Agent (p. ej. en el script de arranque, en `env.example` copiado y cargado con `source`, o en el entorno del servicio). Ver `env.example` en el repo.
 
-El script **`ihs_status_to_appd.py`** hace `GET` a `IHS_STATUS_URL`, parsea `server-status?auto`, construye el payload de métricas y hace `POST` a `APPD_HTTP_LISTENER`. Las métricas se publican con el prefijo `METRIC_PREFIX`.
+- **Múltiples IHS (recomendado):** `IHS_TARGETS` = lista separada por coma; cada target: `"url|label"`.
+  Ejemplo: `IHS_TARGETS="http://ihs1:80/server-status?auto|IHS-PROD-1,http://ihs2:80/server-status?auto|IHS-PROD-2"`
+- **Un solo IHS:** `IHS_STATUS_URL` y opcionalmente `IHS_LABEL` (default `"default"`).
+- `APPD_HTTP_LISTENER`, `METRIC_PREFIX`.
+
+El script **`ihs_status_to_appd.py`** hace `GET` a cada target, parsea `server-status?auto`, construye el payload y hace `POST` a `APPD_HTTP_LISTENER`. Las métricas se publican con el path `METRIC_PREFIX|{label}|{metricName}` (el label distingue cada IHS).
 
 **Dependencias en el host Linux:** **Python** debe estar **instalado** (Python 3). Además, el paquete `requests`:
 
@@ -341,13 +346,11 @@ python3 -m pip install requests
 En el Controller de AppDynamics:
 
 - **Metric Browser** → buscar por ejemplo:
-  - `Custom Metrics|Web|IHS|HPUX|BusyWorkers`
-  - `Custom Metrics|Web|IHS|HPUX|IdleWorkers`
-  - `Custom Metrics|Web|IHS|HPUX|ReqPerSec`
-  - `Custom Metrics|Web|IHS|HPUX|BytesPerSec`
-  - `Custom Metrics|Web|IHS|HPUX|TotalAccesses`
-  - `Custom Metrics|Web|IHS|HPUX|UptimeSec`
+  - `Custom Metrics|Web|IHS|HPUX|{label}|BusyWorkers`
+  - `Custom Metrics|Web|IHS|HPUX|{label}|IdleWorkers`
+  - `Custom Metrics|Web|IHS|HPUX|{label}|ReqPerSec`
   - etc.
+  (Si usas varios IHS, `{label}` será IHS-PROD-1, IHS-PROD-2, etc.)
 
 ---
 

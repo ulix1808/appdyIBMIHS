@@ -2,6 +2,15 @@
 
 Este directorio contiene documentación y ejemplos para instalar el **Apache Agent** de Splunk AppDynamics en **IBM HTTP Server (IHS)**.
 
+## Pruebas locales (IHS simulado)
+
+Para probar el flujo sin un IHS real:
+1. Arrancar el simulador: `python3 simulador_ihs.py 8080`
+2. Crear `machineagent-temp/monitors/IHSStatus/env.local.sh` con `IHS_STATUS_URL=http://127.0.0.1:8080/server-status?auto`, etc.
+3. Arrancar el Machine Agent. Las métricas aparecen en **Metric Browser** → `Custom Metrics|Web|IHS|HPUX|*`.
+
+---
+
 ## Contenido
 
 | Archivo | Descripción |
