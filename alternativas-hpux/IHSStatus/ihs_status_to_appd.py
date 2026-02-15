@@ -9,12 +9,14 @@ Variables de entorno:
   - IHS_STATUS_URL + IHS_LABEL: (legacy, 1 solo IHS) URL y etiqueta opcional (default "default").
   - APPD_HTTP_LISTENER: URL del listener (default http://127.0.0.1:8293/api/v1/metrics).
   - METRIC_PREFIX: Prefijo base (default "Custom Metrics|Web|IHS|HPUX").
+  - SSL_VERIFY: Verificar certificados SSL (default "true"). Usar "false" para certificados autofirmados.
+  - SSL_CERT_PATH: Ruta al archivo de certificado CA (.pem o .crt) para verificación SSL personalizada.
 """
 import os
 import re
 import sys
 import requests
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 
 # --- Helpers ------------------------------------------------------------
 
@@ -144,10 +146,35 @@ def _extract_metrics(status: Dict[str, Any]) -> Dict[str, float]:
 # --- Main ---------------------------------------------------------------
 
 
+def get_ssl_config() -> Dict[str, Any]:
+    """
+    Configura SSL según variables de entorno.
+    Retorna dict con 'verify' (bool) y opcionalmente 'cert' o 'verify' con ruta a CA.
+    """
+    ssl_verify_str = os.getenv("SSL_VERIFY", "true").strip().lower()
+    ssl_cert_path = os.getenv("SSL_CERT_PATH", "").strip()
+    
+    config: Dict[str, Any] = {}
+    
+    if ssl_cert_path:
+        # Si se proporciona ruta a certificado CA, usarlo para verificación
+        if os.path.exists(ssl_cert_path):
+            config["verify"] = ssl_cert_path
+        else:
+            print(f"Warning: SSL_CERT_PATH={ssl_cert_path} no existe, usando SSL_VERIFY", file=sys.stderr)
+            config["verify"] = ssl_verify_str in ("true", "1", "yes", "on")
+    else:
+        # Sin certificado personalizado: usar SSL_VERIFY
+        config["verify"] = ssl_verify_str in ("true", "1", "yes", "on")
+    
+    return config
+
+
 def main() -> int:
     targets = parse_targets()
     listener_url = os.getenv("APPD_HTTP_LISTENER", "http://127.0.0.1:8293/api/v1/metrics").strip()
     metric_prefix_base = os.getenv("METRIC_PREFIX", "Custom Metrics|Web|IHS|HPUX").strip()
+    ssl_config = get_ssl_config()
 
     if not targets:
         print("Missing config: set IHS_TARGETS or IHS_STATUS_URL", file=sys.stderr)
@@ -158,7 +185,11 @@ def main() -> int:
 
     for url, label in targets:
         try:
-            resp = requests.get(url, timeout=10)
+            # Solo aplicar SSL config si es HTTPS
+            if url.startswith("https://"):
+                resp = requests.get(url, timeout=10, verify=ssl_config["verify"])
+            else:
+                resp = requests.get(url, timeout=10)
             resp.raise_for_status()
         except requests.RequestException as e:
             print(f"[{label}] Error fetching {url}: {e}", file=sys.stderr)

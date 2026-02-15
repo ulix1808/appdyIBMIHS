@@ -26,6 +26,9 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
    - **Un solo IHS:** `IHS_STATUS_URL` + opcional `IHS_LABEL` (default `"default"`).
    - `APPD_HTTP_LISTENER`: normalmente `http://127.0.0.1:8293/api/v1/metrics`.
    - `METRIC_PREFIX`: prefijo base (ej. `Custom Metrics|Web|IHS|HPUX`).
+   - **Certificados SSL (HTTPS):**
+     - `SSL_VERIFY`: Verificar certificados SSL. Usar `"false"` para certificados autofirmados (default `"true"`).
+     - `SSL_CERT_PATH`: Ruta al archivo de certificado CA (`.pem` o `.crt`) para verificación SSL personalizada. Si se proporciona, se usa en lugar de `SSL_VERIFY`.
 4. Asegurar que el Machine Agent arranca con:
    ```
    -Dmetric.http.listener=true
@@ -33,6 +36,38 @@ Scrapea `/server-status?auto` de IBM HTTP Server (IHS) en HP-UX y envía métric
    -Dmetric.http.listener.host=127.0.0.1
    ```
 5. Reiniciar el Machine Agent.
+
+## Configuración de certificados SSL
+
+Si los IHS usan HTTPS con certificados autofirmados, el script fallará con `SSLError: certificate verify failed`. Hay dos opciones:
+
+### Opción 1: Deshabilitar verificación SSL (rápido, menos seguro)
+
+```bash
+export SSL_VERIFY="false"
+```
+
+**Nota:** Esto desactiva la verificación de certificados SSL. Úsalo solo en entornos controlados o de desarrollo.
+
+### Opción 2: Cargar certificado CA (recomendado para producción)
+
+1. Obtener el certificado CA del servidor IHS:
+   ```bash
+   # Opción A: Descargar desde el servidor IHS
+   openssl s_client -showcerts -connect 10.10.10.94:40443 </dev/null 2>/dev/null | openssl x509 -outform PEM > /path/to/ihs-ca.pem
+   
+   # Opción B: Si tienes acceso al servidor, copiar el certificado desde el servidor IHS
+   # (ubicación típica: $IHS_HOME/conf/ssl.crt/server.crt o similar)
+   ```
+
+2. Guardar el certificado en el host Linux donde corre el Machine Agent (ej. `/opt/appdynamics/machine-agent/monitors/IHSStatus/ihs-ca.pem`).
+
+3. Configurar la variable de entorno:
+   ```bash
+   export SSL_CERT_PATH="/opt/appdynamics/machine-agent/monitors/IHSStatus/ihs-ca.pem"
+   ```
+
+**Nota:** Si `SSL_CERT_PATH` está definido y el archivo existe, se usará ese certificado para verificación. Si no existe, se usará el valor de `SSL_VERIFY`.
 
 ## Métricas publicadas
 
