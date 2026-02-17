@@ -151,7 +151,8 @@ def get_ssl_config() -> Dict[str, Any]:
     Configura SSL según variables de entorno.
     Retorna dict con 'verify' (bool) y opcionalmente 'cert' o 'verify' con ruta a CA.
     """
-    ssl_verify_str = os.getenv("SSL_VERIFY", "true").strip().lower()
+    ssl_verify_env = os.getenv("SSL_VERIFY", "true")
+    ssl_verify_str = ssl_verify_env.strip().lower() if ssl_verify_env else "true"
     ssl_cert_path = os.getenv("SSL_CERT_PATH", "").strip()
     
     config: Dict[str, Any] = {}
@@ -162,10 +163,12 @@ def get_ssl_config() -> Dict[str, Any]:
             config["verify"] = ssl_cert_path
         else:
             print(f"Warning: SSL_CERT_PATH={ssl_cert_path} no existe, usando SSL_VERIFY", file=sys.stderr)
-            config["verify"] = ssl_verify_str in ("true", "1", "yes", "on")
+            # Verificar explícitamente si es "false" para deshabilitar verificación
+            config["verify"] = ssl_verify_str not in ("false", "0", "no", "off", "")
     else:
         # Sin certificado personalizado: usar SSL_VERIFY
-        config["verify"] = ssl_verify_str in ("true", "1", "yes", "on")
+        # Verificar explícitamente si es "false" para deshabilitar verificación
+        config["verify"] = ssl_verify_str not in ("false", "0", "no", "off", "")
     
     return config
 
@@ -191,6 +194,14 @@ def main() -> int:
             else:
                 resp = requests.get(url, timeout=10)
             resp.raise_for_status()
+        except requests.exceptions.SSLError as e:
+            error_msg = str(e)
+            if "CERTIFICATE_VERIFY_FAILED" in error_msg or "self-signed" in error_msg.lower():
+                print(f"[{label}] Error SSL: certificado autofirmado detectado. Configura SSL_VERIFY=\"false\" o SSL_CERT_PATH con la ruta al certificado CA.", file=sys.stderr)
+                print(f"[{label}] Error detallado: {e}", file=sys.stderr)
+            else:
+                print(f"[{label}] Error SSL: {e}", file=sys.stderr)
+            continue
         except requests.RequestException as e:
             print(f"[{label}] Error fetching {url}: {e}", file=sys.stderr)
             continue
