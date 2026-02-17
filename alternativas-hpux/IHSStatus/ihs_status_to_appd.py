@@ -155,20 +155,29 @@ def get_ssl_config() -> Dict[str, Any]:
     ssl_verify_str = ssl_verify_env.strip().lower() if ssl_verify_env else "true"
     ssl_cert_path = os.getenv("SSL_CERT_PATH", "").strip()
     
+    # Debug: mostrar qué valor se está leyendo (solo si hay problema)
+    debug_ssl = os.getenv("DEBUG_SSL", "").strip().lower() in ("true", "1", "yes", "on")
+    
     config: Dict[str, Any] = {}
     
     if ssl_cert_path:
         # Si se proporciona ruta a certificado CA, usarlo para verificación
         if os.path.exists(ssl_cert_path):
             config["verify"] = ssl_cert_path
+            if debug_ssl:
+                print(f"DEBUG SSL: Usando SSL_CERT_PATH={ssl_cert_path}", file=sys.stderr)
         else:
             print(f"Warning: SSL_CERT_PATH={ssl_cert_path} no existe, usando SSL_VERIFY", file=sys.stderr)
             # Verificar explícitamente si es "false" para deshabilitar verificación
             config["verify"] = ssl_verify_str not in ("false", "0", "no", "off", "")
+            if debug_ssl:
+                print(f"DEBUG SSL: SSL_VERIFY='{ssl_verify_env}' -> verify={config['verify']}", file=sys.stderr)
     else:
         # Sin certificado personalizado: usar SSL_VERIFY
         # Verificar explícitamente si es "false" para deshabilitar verificación
         config["verify"] = ssl_verify_str not in ("false", "0", "no", "off", "")
+        if debug_ssl:
+            print(f"DEBUG SSL: SSL_VERIFY='{ssl_verify_env}' (raw) -> '{ssl_verify_str}' (normalized) -> verify={config['verify']}", file=sys.stderr)
     
     return config
 
@@ -197,7 +206,12 @@ def main() -> int:
         except requests.exceptions.SSLError as e:
             error_msg = str(e)
             if "CERTIFICATE_VERIFY_FAILED" in error_msg or "self-signed" in error_msg.lower():
-                print(f"[{label}] Error SSL: certificado autofirmado detectado. Configura SSL_VERIFY=\"false\" o SSL_CERT_PATH con la ruta al certificado CA.", file=sys.stderr)
+                ssl_verify_current = os.getenv("SSL_VERIFY", "no configurado")
+                verify_value = ssl_config["verify"]
+                print(f"[{label}] Error SSL: certificado autofirmado detectado.", file=sys.stderr)
+                print(f"[{label}] SSL_VERIFY actual: '{ssl_verify_current}' -> verify={verify_value}", file=sys.stderr)
+                if verify_value:
+                    print(f"[{label}] SOLUCIÓN: Configura SSL_VERIFY=\"false\" (actualmente está habilitada la verificación)", file=sys.stderr)
                 print(f"[{label}] Error detallado: {e}", file=sys.stderr)
             else:
                 print(f"[{label}] Error SSL: {e}", file=sys.stderr)
